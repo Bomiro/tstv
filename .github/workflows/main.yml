@@ -1,33 +1,12 @@
-name: VPS via GitHub Actions + Ngrok
+name: Web SSH Ubuntu
 
 on: workflow_dispatch
 
 jobs:
-  vps:
+  ssh-session:
     runs-on: ubuntu-latest
     steps:
-      - name: Install SSH & Ngrok
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openssh-server unzip jq
-          
-          # تفعيل SSH
-          sudo service ssh start
-          
-          # تعيين كلمة مرور
-          echo "root:MyStrongPass123" | sudo chpasswd
-          
-          # تثبيت ngrok
-          curl -s https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -o ngrok.zip
-          unzip ngrok.zip
-          sudo mv ngrok /usr/local/bin
-          
-          # تشغيل ngrok
-          ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
-          nohup ngrok tcp 22 &
-          sleep 10
-          
-          echo "===== VPS Details ====="
-          curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
-          echo "Username: root"
-          echo "Password: MyStrongPass123"
+      - name: Start tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: false
