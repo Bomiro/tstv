@@ -3,10 +3,10 @@ name: SSH Ubuntu
 on: workflow_dispatch
 
 jobs:
-  build:
+  ssh-session:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup tmate session
+      - name: Start tmate session
         uses: mxschmitt/action-tmate@v3
         with:
-          limit-access-to-actor: true
+          limit-access-to-actor: false
