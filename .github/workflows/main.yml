@@ -1,15 +1,16 @@
-name: SSH over Ngrok
+name: SSH over ngrok 443
 
 on: workflow_dispatch
 
 jobs:
-  ssh-info:
+  ssh-ngrok:
     runs-on: ubuntu-latest
     steps:
-      - name: Install SSH
+      - name: Install SSH & jq
         run: |
           sudo apt-get update
           sudo apt-get install -y openssh-server jq
+          # Set root password
           echo "root:toor123" | sudo chpasswd
           sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
           sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
@@ -21,15 +22,16 @@ jobs:
           echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
           sudo apt-get update && sudo apt-get install -y ngrok
 
-      - name: Start ngrok tunnel and show info
+      - name: Start ngrok TCP on 443 and show connection info
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
           ngrok config add-authtoken $NGROK_AUTH_TOKEN
-          nohup ngrok tcp 22 --region eu > /dev/null &
+          # Start ngrok TCP tunnel in background
+          nohup ngrok tcp 22 --remote-addr=0.tcp.ngrok.io:443 > /dev/null &
           sleep 5
           INFO=$(curl -s localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
-          # INFO example: tcp://0.tcp.eu.ngrok.io:12345
+          # Example: tcp://0.tcp.ngrok.io:12345
           IP=$(echo $INFO | cut -d':' -f2 | sed 's#//#//#g' | cut -d'/' -f3)
           PORT=$(echo $INFO | cut -d':' -f3)
           USER=root
@@ -38,3 +40,5 @@ jobs:
           echo "SSH connection info:"
           echo "$IP:$PORT@$USER:$PASS"
           echo "=========================="
+          # Keep the runner alive
+          while true; do sleep 3600; done
